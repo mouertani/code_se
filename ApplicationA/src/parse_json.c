@@ -95,6 +95,7 @@ void CheckDeletedElement() {
 			fgets(lold, 512, fpold);
 			fgets(lold, 512, fpold);
 			fprintf(fpout,"%s is removed from the list\n", ssid);
+			free(ssid);
 		}
 	}
 	fclose(fpout);
@@ -136,6 +137,9 @@ void CheckAddedElement() {
 			fgets(lnew, 512, fpnew);
 			char* channel=GetParam(lnew);
 			fprintf(fpout,"%s is added to the list with SNR %s and channel %s\n", ssid, snr, channel);
+			free(ssid);
+			free(snr);
+			free(channel);
 		}
 	}
 	fclose(fpout);
@@ -169,12 +173,17 @@ void CheckModifiedElement() {
 						char* OldSnr=GetParam(lold);
 						char* CurrSnr=GetParam(lnew);
 						fprintf(fpout,"%s’s SNR has changed from %s to %s\n", ssid, OldSnr, CurrSnr);
+						free(OldSnr);
+						free(CurrSnr);
 					}else if(strcmp(lnew,lold) && (i==1)) {
 						char* OldChannel=GetParam(lold);
 						char* CurrChannel=GetParam(lnew);
 						fprintf(fpout,"%s’s channel has changed from %s to %s\n", ssid, OldChannel, CurrChannel);
+						free(OldChannel);
+						free(CurrChannel);
 					}
 				}
+				free(ssid);
 			}
 		}
 	}
