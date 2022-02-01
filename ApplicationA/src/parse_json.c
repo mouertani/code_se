@@ -164,7 +164,7 @@ void CheckModifiedElement() {
 			printf("Failed to open OldStats.txt\n");
 		}
 		while(fgets(lold,512,fpold) != NULL) {
-			if(!strcmp(lnew,lold)) {
+			if((!strcmp(lnew,lold)) && (strstr(lnew,"ssid") != NULL)) {
 				char* ssid=GetParam(lnew);
 				for(int i=0;i<2;i++) {
 					fgets(lnew, 512, fpnew);
