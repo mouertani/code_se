@@ -9,11 +9,11 @@
 void ReadData() {
 	FILE*fp=NULL;
 	char buffer[BUF_MAX_SIZE];
-	if((fp=fopen("/tmp/Results.txt","r")) == NULL) {
-		printf("Failed to open Results.txt\n");
-	}
-	while(fgets(buffer,512,fp) != NULL) {
-		printf("%s\n", buffer);
+	fp=fopen("/tmp/Results.txt","r");
+	if(fp != NULL) {
+		while(fgets(buffer,512,fp) != NULL) {
+			printf("%s\n", buffer);
+		}
 	}
 }
 
