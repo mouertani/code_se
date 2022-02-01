@@ -59,6 +59,7 @@ char* GetParam(char buffer[BUF_MAX_SIZE]) {
 			strncpy(Ret,buffer+i+1,strlen(buffer)-i);
 		}
 	}
+	Ret[strlen(Ret)-1]='\0';
 	return Ret;
 }
 
