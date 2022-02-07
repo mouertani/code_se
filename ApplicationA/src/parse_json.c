@@ -4,8 +4,10 @@
 #include <unistd.h>
 #include <string.h>
 #include "../inc/parse_json.h"
+#include <arpa/inet.h>
 
 #define TIME_VALUE_SEC 10
+#define SIZE 1024
 
 void ParseJson() {
 	FILE*fpnew=NULL;
@@ -33,6 +35,8 @@ void ParseJson() {
 
 void *threadproc(void *arg) {
 	int Start=1;
+	int sockfd = *((int *) arg);
+	free(arg);
 	while(1) {
 		ParseJson();
 		char command[50];
@@ -41,9 +45,9 @@ void *threadproc(void *arg) {
 			system(command);
 			Start=0;
 		} else {
-			CheckDeletedElement();
-			CheckAddedElement();
-			CheckModifiedElement();
+			CheckDeletedElement(sockfd);
+			CheckAddedElement(sockfd);
+			CheckModifiedElement(sockfd);
 			strcpy( command, "cp /tmp/CurrStats.txt /tmp/OldStats.txt" );
 			system(command);
 		}
@@ -63,16 +67,12 @@ char* GetParam(char buffer[BUF_MAX_SIZE]) {
 	return Ret;
 }
 
-void CheckDeletedElement() {
+void CheckDeletedElement(int sockfd) {
 	FILE*fpnew=NULL;
 	FILE*fpold=NULL;
-	FILE*fpout=NULL;
 	char lnew[BUF_MAX_SIZE];
 	char lold[BUF_MAX_SIZE];
 	int isfound=0;
-	if((fpout=fopen("/tmp/Results.txt","w")) == NULL) {
-		printf("Failed to open Results.txt\n");
-	}
 	if((fpold=fopen("/tmp/OldStats.txt","r")) == NULL) {
 		printf("Failed to open OldStats.txt\n");
 	}
@@ -91,27 +91,30 @@ void CheckDeletedElement() {
 			}
 		}
 		if(!isfound) {
+			char data[SIZE];
 			char* ssid=GetParam(lold);
 			fgets(lold, 512, fpold);
 			fgets(lold, 512, fpold);
-			fprintf(fpout,"%s is removed from the list\n", ssid);
+			sprintf(data,"[+]%s is removed from the list", ssid);
+			if(send(sockfd, data, sizeof(data), 0) == -1) {
+				perror("[-]Error in sending data.");
+				exit(1);
+			}else {
+				printf("[+]Data sent successfully.\n");
+			}
+			bzero(data, SIZE);
 			free(ssid);
 		}
 	}
-	fclose(fpout);
 	fclose(fpold);
 	fclose(fpnew);
 }
 
-void CheckAddedElement() {
+void CheckAddedElement(int sockfd) {
 	FILE*fpnew=NULL;
 	FILE*fpold=NULL;
-	FILE*fpout=NULL;
 	char lnew[BUF_MAX_SIZE];
 	char lold[BUF_MAX_SIZE];
-	if((fpout=fopen("/tmp/Results.txt","a")) == NULL) {
-		printf("Failed to open Results.txt\n");
-	}
 	int isfound=0;
 	if((fpnew=fopen("/tmp/CurrStats.txt","r")) == NULL) {
 		printf("Failed to open CurrStats.txt\n");
@@ -131,31 +134,34 @@ void CheckAddedElement() {
 			}
 		}
 		if(!isfound) {
+			char data[SIZE];
 			char* ssid=GetParam(lnew);
 			fgets(lnew, 512, fpnew);
 			char* snr=GetParam(lnew);
 			fgets(lnew, 512, fpnew);
 			char* channel=GetParam(lnew);
-			fprintf(fpout,"%s is added to the list with SNR %s and channel %s\n", ssid, snr, channel);
+			sprintf(data,"[+]%s is added to the list with SNR %s and channel %s", ssid, snr, channel);
+			if(send(sockfd, data, sizeof(data), 0) == -1) {
+				perror("[-]Error in sending data.");
+				exit(1);
+			}else {
+				printf("[+]Data sent successfully.\n");
+			}
+			bzero(data, SIZE);
 			free(ssid);
 			free(snr);
 			free(channel);
 		}
 	}
-	fclose(fpout);
 	fclose(fpold);
 	fclose(fpnew);
 }
 
-void CheckModifiedElement() {
+void CheckModifiedElement(int sockfd) {
 	FILE*fpnew=NULL;
 	FILE*fpold=NULL;
-	FILE*fpout=NULL;
 	char lnew[BUF_MAX_SIZE];
 	char lold[BUF_MAX_SIZE];
-	if((fpout=fopen("/tmp/Results.txt","a")) == NULL) {
-		printf("Failed to open Results.txt\n");
-	}
 	if((fpnew=fopen("/tmp/CurrStats.txt","r")) == NULL) {
 		printf("Failed to open CurrStats.txt\n");
 	}
@@ -165,6 +171,7 @@ void CheckModifiedElement() {
 		}
 		while(fgets(lold,512,fpold) != NULL) {
 			if((!strcmp(lnew,lold)) && (strstr(lnew,"ssid") != NULL)) {
+				char data[SIZE];
 				char* ssid=GetParam(lnew);
 				for(int i=0;i<2;i++) {
 					fgets(lnew, 512, fpnew);
@@ -172,13 +179,27 @@ void CheckModifiedElement() {
 					if(strcmp(lnew,lold) && (i==0)) {
 						char* OldSnr=GetParam(lold);
 						char* CurrSnr=GetParam(lnew);
-						fprintf(fpout,"%s’s SNR has changed from %s to %s\n", ssid, OldSnr, CurrSnr);
+						sprintf(data,"[+]%s’s SNR has changed from %s to %s", ssid, OldSnr, CurrSnr);
+						if(send(sockfd, data, sizeof(data), 0) == -1) {
+							perror("[-]Error in sending data.");
+							exit(1);
+						}else {
+							printf("[+]Data sent successfully.\n");
+						}
+						bzero(data, SIZE);
 						free(OldSnr);
 						free(CurrSnr);
 					}else if(strcmp(lnew,lold) && (i==1)) {
 						char* OldChannel=GetParam(lold);
 						char* CurrChannel=GetParam(lnew);
-						fprintf(fpout,"%s’s channel has changed from %s to %s\n", ssid, OldChannel, CurrChannel);
+						sprintf(data,"[+]%s’s channel has changed from %s to %s", ssid, OldChannel, CurrChannel);
+						if(send(sockfd, data, sizeof(data), 0) == -1) {
+							perror("[-]Error in sending data.");
+							exit(1);
+						}else {
+							printf("[+]Data sent successfully.\n");
+						}
+						bzero(data, SIZE);
 						free(OldChannel);
 						free(CurrChannel);
 					}
@@ -187,14 +208,35 @@ void CheckModifiedElement() {
 			}
 		}
 	}
-	fclose(fpout);
 	fclose(fpold);
 	fclose(fpnew);
 }
 
 int main(int argc, char **argv) {
+
+	char *ip = "127.0.0.1";
+	int port = 8080;
+	int e;
+	int sockfd;
+	struct sockaddr_in server_addr;
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sockfd < 0) {
+		perror("[-]Error in socket");
+		exit(1);
+	}
+	printf("[+]Server socket created successfully.\n");
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_port = port;
+	server_addr.sin_addr.s_addr = inet_addr(ip);
+	e = connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
+	if(e == -1) {
+		perror("[-]Error in socket");
+		exit(1);
+	}
+	int *arg = malloc(sizeof(*arg));
+	*arg=sockfd;
 	pthread_t tid;
-	pthread_create(&tid, NULL, &threadproc, NULL);
+	pthread_create(&tid, NULL, &threadproc, arg);
 	pthread_join(tid, NULL);
 	return 0;
 }
