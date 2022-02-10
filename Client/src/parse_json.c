@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
 		perror("[-]Error in socket");
 		exit(1);
 	}
-	printf("[+]Server socket created successfully.\n");
+	printf("[+]Client socket created successfully.\n");
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = port;
 	server_addr.sin_addr.s_addr = inet_addr(ip);
